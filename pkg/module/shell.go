@@ -57,6 +57,7 @@ const (
 	TEMPLATE_DISKFREE = "df {{.options}} {{.files}}"
 	TEMPLATE_LSBLK    = "lsblk {{.options}} {{.devices}}"
 	TEMPLATE_BLKID    = "blkid {{.options}} {{.device}}"
+	TEMPLATE_TEST     = "test {{.options}} {{.file}}"
 
 	// network
 	TEMPLATE_SS      = "ss {{.options}} '{{.filter}}'"
@@ -70,6 +71,9 @@ const (
 	TEMPLATE_UNAME    = "uname {{.options}}"
 	TEMPLATE_MODPROBE = "modprobe {{.options}} {{.modulename}} {{.arguments}}"
 	TEMPLATE_MODINFO  = "modinfo {{.modulename}}"
+	TEMPLATE_PGREP    = "pgrep {{.options}} {{.pattern}}"
+	TEMPLATE_KILL     = "kill {{.options}} {{.pid}}"
+	TEMPLATE_GREP     = "grep {{.options}} {{.pattern}} {{.files}}"
 
 	// others
 	TEMPLATE_TAR  = "tar {{.options}} {{.file}}"
@@ -101,6 +105,11 @@ func NewShell(sshClient *SSHClient) *Shell {
 
 func (s *Shell) AddOption(format string, args ...interface{}) *Shell {
 	s.options = append(s.options, fmt.Sprintf(format, args...))
+	return s
+}
+
+func (s *Shell) ClearOption() *Shell {
+	s.options = s.options[:0]
 	return s
 }
 
@@ -233,6 +242,12 @@ func (s *Shell) BlkId(device string) *Shell {
 	return s
 }
 
+func (s *Shell) Test(file string) *Shell {
+	s.tmpl = template.Must(template.New("test").Parse(TEMPLATE_TEST))
+	s.data["file"] = file
+	return s
+}
+
 // network
 func (s *Shell) SocketStatistics(filter string) *Shell {
 	s.tmpl = template.Must(template.New("ss").Parse(TEMPLATE_SS))
@@ -285,6 +300,25 @@ func (s *Shell) ModProbe(modulename string, args ...string) *Shell {
 func (s *Shell) ModInfo(modulename string) *Shell {
 	s.tmpl = template.Must(template.New("modinfo").Parse(TEMPLATE_MODINFO))
 	s.data["modulename"] = modulename
+	return s
+}
+
+func (s *Shell) Pgrep(pattern string) *Shell {
+	s.tmpl = template.Must(template.New("pgrep").Parse(TEMPLATE_PGREP))
+	s.data["pattern"] = pattern
+	return s
+}
+
+func (s *Shell) Kill(pid int) *Shell {
+	s.tmpl = template.Must(template.New("kill").Parse(TEMPLATE_KILL))
+	s.data["pid"] = pid
+	return s
+}
+
+func (s *Shell) Grep(pattern string, files ...string) *Shell {
+	s.tmpl = template.Must(template.New("grep").Parse(TEMPLATE_GREP))
+	s.data["pattern"] = pattern
+	s.data["files"] = strings.Join(files, " ")
 	return s
 }
 

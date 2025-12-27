@@ -33,15 +33,22 @@ import (
 
 	"github.com/dingodb/dingoadm/cli/cli"
 	"github.com/dingodb/dingoadm/cli/command"
+	"github.com/dingodb/dingoadm/pkg/logger"
 )
 
 func Execute() {
+	logfile := logger.DEFAULT_LOG_FILE
+	loglevel := logger.DEFAULT_LOG_LEVEL
+	logfmt := logger.DEFAULT_LOG_FORMAT
+
 	dingoadm, err := cli.NewDingoAdm()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
+	// init glogal logger
+	logger.InitGlobalLogger(logger.WithLogFile(logfile), logger.WithLogLevel(loglevel), logger.WithFormat(logfmt))
 	id := dingoadm.PreAudit(time.Now(), os.Args[1:])
 	cmd := command.NewDingoAdmCommand(dingoadm)
 	err = cmd.Execute()

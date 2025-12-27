@@ -96,3 +96,19 @@ func (f *FileManager) Install(content, destPath string) error {
 
 	return os.Rename(file.Name(), destPath)
 }
+
+func (f *FileManager) InstallTmpFile(content string) (string, error) {
+	file, err := os.CreateTemp(TEMP_DIR, "dingo.*.install")
+	if err != nil {
+		return "", err
+	}
+
+	n, err := file.WriteString(content)
+	if err != nil {
+		return "", err
+	} else if n != len(content) {
+		return "", fmt.Errorf("written: expect %d bytes, actually %d bytes", len(content), n)
+	}
+
+	return file.Name(), nil
+}

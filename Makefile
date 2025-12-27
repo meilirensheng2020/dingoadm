@@ -1,4 +1,8 @@
-.PHONY: build debug install test upload lint
+.PHONY: build debug install test upload lint proto install_grpc_tools clean
+
+PROTOC_VERSION= 21.8
+PROTOC_GEN_GO_VERSION= "v1.28"
+PROTOC_GEN_GO_GRPC_VERSION= "v1.2"
 
 # go env
 #GOPROXY     := "https://goproxy.cn,direct"
@@ -56,6 +60,12 @@ TEST_FLAGS += -run $(CASE)
 # packages
 PACKAGES := $(PWD)/cmd/dingoadm/main.go
 
+# tools
+GOPATH := $(shell go env GOPATH)
+PROTOC_GEN_GO := $(GOPATH)/bin/protoc-gen-go
+PROTOC_GEN_GO_GRPC := $(GOPATH)/bin/protoc-gen-go-grpc
+
+
 # tar
 VERSION := "unknown"
 
@@ -78,3 +88,15 @@ lint:
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCILINT_VERSION)
 	$(GOBIN_GOLANGCILINT) run -v
 
+proto: install_grpc_tools
+	@bash mk-proto.sh
+
+install_grpc_tools: $(PROTOC_GEN_GO) $(PROTOC_GEN_GO_GRPC)
+$(PROTOC_GEN_GO):
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@${PROTOC_GEN_GO_VERSION}
+$(PROTOC_GEN_GO_GRPC):
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@${PROTOC_GEN_GO_GRPC_VERSION}
+
+clean:
+	rm -rf bin
+	rm -rf proto/*

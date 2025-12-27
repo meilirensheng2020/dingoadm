@@ -41,9 +41,9 @@ const (
 )
 
 type ErrorCode struct {
-	code        int
-	description string
-	clue        string
+	Code        int    `json:"code"`
+	Description string `json:"description"`
+	Clue        string `json:"-"`
 }
 
 var (
@@ -59,9 +59,9 @@ func Init(logpath string) {
 func List() error {
 	count := map[int]int{}
 	for _, e := range elist {
-		fmt.Printf(color.GreenString("%06d ", e.code))
-		fmt.Println(color.YellowString("%s", e.description))
-		count[e.code]++
+		fmt.Printf(color.GreenString("%06d ", e.Code))
+		fmt.Println(color.YellowString("%s", e.Description))
+		count[e.Code]++
 	}
 	fmt.Println(strings.Repeat("-", 3))
 	fmt.Printf("%d error codes\n", len(count))
@@ -76,55 +76,55 @@ func List() error {
 
 func EC(code int, description string) *ErrorCode {
 	e := &ErrorCode{
-		code:        code,
-		description: description,
+		Code:        code,
+		Description: description,
 	}
 	elist = append(elist, e)
 	return e
 }
 
 func (e *ErrorCode) GetCode() int {
-	return e.code
+	return e.Code
 }
 
 func (e *ErrorCode) GetDescription() string {
-	return e.description
+	return e.Description
 }
 
 func (e *ErrorCode) GetClue() string {
-	return e.clue
+	return e.Clue
 }
 
 // added clue for error code
 func (e *ErrorCode) E(err error) *ErrorCode {
-	e.clue = err.Error()
+	e.Clue = err.Error()
 	return e
 }
 
 func (e *ErrorCode) S(clue string) *ErrorCode {
-	e.clue = clue
+	e.Clue = clue
 	return e
 }
 
 func (e *ErrorCode) F(format string, a ...interface{}) *ErrorCode {
-	e.clue = fmt.Sprintf(format, a...)
+	e.Clue = fmt.Sprintf(format, a...)
 	return e
 }
 
 func (e *ErrorCode) FD(format string, s ...interface{}) *ErrorCode {
 	newEC := &ErrorCode{
-		code:        e.code,
-		description: e.description,
+		Code:        e.Code,
+		Description: e.Description,
 	}
-	newEC.description = fmt.Sprintf(newEC.description+" "+format, s...)
+	newEC.Description = fmt.Sprintf(newEC.Description+" "+format, s...)
 	return newEC
 }
 
 func (e *ErrorCode) Error() string {
-	if e.code == CODE_CANCEL_OPERATION {
+	if e.Code == CODE_CANCEL_OPERATION {
 		return ""
 	}
-	return tui.PromptErrorCode(e.code, e.description, e.clue, gLogpath)
+	return tui.PromptErrorCode(e.Code, e.Description, e.Clue, gLogpath)
 }
 
 /*
@@ -198,6 +198,8 @@ func (e *ErrorCode) Error() string {
  * 9xx: others
  */
 var (
+	// OK
+	ERR_OK = EC(000000, "success")
 	// 000: init dingoadm
 	ERR_GET_USER_HOME_DIR_FAILED            = EC(000001, "get user home dir failed")
 	ERR_CREATE_CURVEADM_SUBDIRECTORY_FAILED = EC(000002, "create dingoadm subdirectory failed")
@@ -567,6 +569,9 @@ var (
 
 	// 650: mdsv2
 	ERR_CREATE_META_TABLE_FAILED = EC(650000, "create meta table failed")
+
+	// 660: rpc
+	ERR_RPC_FAILED = EC(660000, "rpc failed")
 
 	// 690: execuetr task (others)
 	ERR_START_CRONTAB_IN_CONTAINER_FAILED = EC(690000, "start crontab in container failed")
