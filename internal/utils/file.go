@@ -29,9 +29,16 @@
 package utils
 
 import (
+	"context"
+	"crypto/tls"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"time"
+
+	"github.com/schollz/progressbar/v3"
 )
 
 type VariantName struct {
@@ -99,4 +106,115 @@ func WriteFile(filename, data string, mode int) error {
 	}
 
 	return nil
+}
+
+func IsFileExists(filepath string) bool {
+	_, err := os.Stat(filepath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func HasExecutePermission(filepath string) bool {
+	fileInfo, err := os.Stat(filepath)
+	if err != nil {
+		return false
+	}
+	mode := fileInfo.Mode()
+	return mode&0111 != 0
+}
+
+func AddExecutePermission(filepath string) error {
+	fileInfo, err := os.Stat(filepath)
+	if err != nil {
+		return err
+	}
+	currentMode := fileInfo.Mode()
+
+	newMode := currentMode | 0111
+
+	fileInfo.Mode().Perm()
+	return os.Chmod(filepath, newMode)
+}
+
+func DownloadFileWithProgress(url, destination, filename string) (string, error) {
+	// resp, err := http.Get(url)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// defer resp.Body.Close()
+
+	client := &http.Client{
+		Timeout: 300 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+			TLSHandshakeTimeout:   60 * time.Second,
+			ResponseHeaderTimeout: 120 * time.Second,
+			ExpectContinueTimeout: 5 * time.Second,
+			IdleConnTimeout:       90 * time.Second,
+			MaxIdleConns:          100,
+			MaxIdleConnsPerHost:   10,
+		},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	finalFilename := filename
+	if finalFilename == "" {
+		finalFilename = filepath.Base(url)
+	}
+
+	if err := os.MkdirAll(destination, 0755); err != nil {
+		return "", err
+	}
+
+	filePath := filepath.Join(destination, finalFilename)
+	out, err := os.Create(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer out.Close()
+
+	bar := progressbar.NewOptions64(
+		resp.ContentLength,
+		progressbar.OptionSetDescription(fmt.Sprintf("downloading %s:", finalFilename)),
+		progressbar.OptionSetWriter(os.Stderr),
+		progressbar.OptionShowBytes(true),
+		progressbar.OptionSetWidth(30),
+		progressbar.OptionShowCount(),
+		progressbar.OptionOnCompletion(func() {
+			fmt.Fprint(os.Stderr, "\n")
+		}),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "=",
+			SaucerHead:    ">",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}),
+	)
+
+	_, err = io.Copy(io.MultiWriter(out, bar), resp.Body)
+	if err != nil {
+		os.Remove(filePath)
+		return "", err
+	}
+
+	return filePath, nil
 }

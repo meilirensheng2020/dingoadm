@@ -46,6 +46,7 @@ import (
 	"github.com/dingodb/dingoadm/internal/utils"
 	cliutil "github.com/dingodb/dingoadm/internal/utils"
 	log "github.com/dingodb/dingoadm/pkg/log/glg"
+	"github.com/dingodb/dingoadm/pkg/logger"
 	"github.com/dingodb/dingoadm/pkg/module"
 )
 
@@ -74,6 +75,8 @@ type DingoAdm struct {
 	clusterTopologyData string // cluster topology
 	clusterPoolData     string // cluster pool
 	monitor             storage.Monitor
+
+	dingoLogger *logger.DingoLogger
 }
 
 /*
@@ -210,6 +213,7 @@ func (dingoadm *DingoAdm) init() error {
 	dingoadm.clusterTopologyData = cluster.Topology
 	dingoadm.clusterPoolData = cluster.Pool
 	dingoadm.monitor = monitor
+	dingoadm.dingoLogger = logger.InitGlobalLogger(logger.WithLogFile(fmt.Sprintf("%s/dingocli.log", dingoadm.logDir)))
 
 	return nil
 }

@@ -29,6 +29,8 @@
 package common
 
 import (
+	"time"
+
 	"github.com/dingodb/dingoadm/internal/configure/topology"
 )
 
@@ -161,4 +163,15 @@ const (
 	AUDIT_STATUS_SUCCESS
 	AUDIT_STATUS_FAIL
 	AUDIT_STATUS_CANCEL
+)
+
+type RpcOpions struct {
+	RetryTimes int32
+	RetryDelay time.Duration
+	TimeOut    time.Duration
+}
+
+// dingofs root inodeid
+const (
+	ROOTINODEID = uint64(1)
 )
